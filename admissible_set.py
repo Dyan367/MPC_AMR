@@ -425,210 +425,145 @@ def compute_admissible_sets(A, B, K, N, x_lb, x_ub, u_lb, u_ub):
 # Call function after computing K
 X_admissible = compute_admissible_sets(Ad, Bd, -K, N, x_lb_shrunk, x_ub_shrunk, u_lb, u_ub)
 
-# Plot the admissible set projection (e1 vs e2)
-proj_set = pc.projection(X_admissible[0], [0, 2])
-fig, ax = plt.subplots()
-proj_set.plot(ax=ax)
-ax.set_title("Admissible Set X0: e1 vs e2")
-ax.set_xlabel("e1")
-ax.set_ylabel("e2")
-ax.grid(True)
-ax.axis('equal')
+print("\nPlotting admissible sets...")
+
+# Function to plot 2D projection of a 4D polytope
+def plot_2d_projection(poly, indices=(0, 2), title="Polytope Projection", ax=None):
+    if ax is None:
+        fig, ax = plt.subplots()
+    
+    # Check if polytope is empty
+    if poly.volume <= 0:
+        print(f"Warning: Cannot plot empty polytope in {title}")
+        return ax
+    
+    # For 4D polytopes, we need to project to 2D for visualization
+    try:
+        # Direct projection attempt
+        proj_poly = pc.projection(poly, list(indices))
+        
+        if proj_poly.dim == 2:
+            # If successful projection to 2D, plot with polytope method
+            proj_poly.plot(ax=ax, color='blue', alpha=0.5)
+        else:
+            print(f"Warning: Projection resulted in {proj_poly.dim}D polytope, expected 2D")
+            # Try manual approach
+            raise ValueError("Incorrect projection dimension")
+            
+    except Exception as e:
+        print(f"Projection error: {e}, trying manual approach")
+        
+        # Manual plotting approach - extract vertices if available
+        try:
+            vertices = poly.vertices
+            if vertices is not None and len(vertices) > 0:
+                # Extract only the relevant dimensions
+                idx1, idx2 = indices
+                x_coords = [v[idx1] for v in vertices]
+                y_coords = [v[idx2] for v in vertices]
+                
+                # Compute convex hull for proper rendering
+                from scipy.spatial import ConvexHull
+                if len(x_coords) > 2:
+                    points = np.column_stack((x_coords, y_coords))
+                    hull = ConvexHull(points)
+                    hull_points = points[hull.vertices]
+                    ax.fill(hull_points[:, 0], hull_points[:, 1], 
+                            alpha=0.5, edgecolor='blue', facecolor='blue', 
+                            label=title)
+                else:
+                    # Just plot the points if too few for convex hull
+                    ax.scatter(x_coords, y_coords, c='blue')
+            else:
+                # Fall back to bounding box
+                lb, ub = poly.bounding_box
+                idx1, idx2 = indices
+                x_min, x_max = lb[idx1], ub[idx1]
+                y_min, y_max = lb[idx2], ub[idx2]
+                
+                # Create a rectangle for the bounding box
+                from matplotlib.patches import Rectangle
+                rect = Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
+                                fill=True, alpha=0.3, edgecolor='red', 
+                                facecolor='blue', linewidth=2)
+                ax.add_patch(rect)
+                
+        except Exception as e2:
+            print(f"Failed to plot polytope manually: {e2}")
+            # Just plot the state constraints as a fallback
+            x_min, x_max = -0.5, 0.5
+            y_min, y_max = -0.2, 0.2
+            ax.plot([x_min, x_max, x_max, x_min, x_min], 
+                    [y_min, y_min, y_max, y_max, y_min],
+                    'r--', label='State Constraints')
+    
+    ax.set_xlabel(f"x[{indices[0]}]")
+    ax.set_ylabel(f"x[{indices[1]}]")
+    ax.set_title(title)
+    ax.grid(True)
+    return ax
+
+# Plot individual admissible sets (a few key ones)
+fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+plot_indices = [0, N//3, 2*N//3, N]  # Plot sets at different time points
+
+for i, idx in enumerate(plot_indices):
+    if idx >= len(X_admissible):
+        continue
+    ax = axs[i//2, i%2]
+    plot_2d_projection(X_admissible[idx], indices=(0, 2), 
+                      title=f"Admissible Set X_{idx}: e1 vs e2", ax=ax)
+    ax.axis('equal')
+
+plt.tight_layout()
 plt.show()
 
-# c_terminal = find_terminal_set_outer_approx(P, K, u_bounds=[u_lb, u_ub],x_bounds=[x_lb_shrunk, x_ub_shrunk])
-# print("Maximal terminal set constant c =", c_terminal)
-# terminal_set = ellipsoid_to_polytope(P, c_terminal, num_directions=200)
+# Plot the comparison of different sets
+plt.figure(figsize=(10, 8))
+ax = plt.gca()
 
-# def plot_terminal_set_2d(terminal_set, dims=(0, 2), title="Terminal Set in (e1, e2)"):
-#     """
-#     Plots 2D projection of terminal set polytope onto selected dimensions (e.g., e1 vs e2).
+# Plot state constraints as reference
+x_min, x_max = -0.5, 0.5
+y_min, y_max = -0.2, 0.2
+ax.plot([x_min, x_max, x_max, x_min, x_min], 
+        [y_min, y_min, y_max, y_max, y_min],
+        'k--', linewidth=2, label='State Constraints')
 
-#     Args:
-#         terminal_set: polytope.Polytope object
-#         dims: tuple of indices for projection (e.g., (0, 2) for e1 vs e2)
-#         title: plot title
-#     """
-#     proj_set = pc.projection(terminal_set, dims)
+# Plot the terminal set
+try:
+    plot_2d_projection(X_admissible[-1], indices=(0, 2), 
+                      title="Terminal Set", ax=ax)
+except Exception as e:
+    print(f"Failed to plot terminal set: {e}")
 
-#     fig, ax = plt.subplots()
-#     proj_set.plot(ax=ax)
-#     ax.set_title(title)
-#     ax.set_xlabel(f"x[{dims[0]}]")
-#     ax.set_ylabel(f"x[{dims[1]}]")
-#     ax.grid(True)
-#     ax.axis('equal')
-#     plt.show()
+# Plot the initial admissible set with different color
+try:
+    first_set = X_admissible[0]
+    # Try to manually plot vertices
+    try:
+        vertices = first_set.vertices
+        if vertices is not None and len(vertices) > 0:
+            x_coords = [v[0] for v in vertices]
+            y_coords = [v[2] for v in vertices]  # Using index 2 for e2
+            
+            from scipy.spatial import ConvexHull
+            if len(x_coords) > 2:
+                points = np.column_stack((x_coords, y_coords))
+                hull = ConvexHull(points)
+                hull_points = points[hull.vertices]
+                ax.fill(hull_points[:, 0], hull_points[:, 1], 
+                        alpha=0.3, edgecolor='red', facecolor='red',
+                        label='Initial Admissible Set X₀')
+    except Exception as e:
+        print(f"Failed to plot initial set: {e}")
+        # Try alternative methods here if needed
+except Exception as e:
+    print(f"Failed to access initial set: {e}")
 
-# plot_terminal_set_2d(terminal_set, dims=(0, 2), title="Terminal Set: e1 vs e2")
-
-
-# # Run MPC without terminal constraints first to ensure it works
-# print("\nRunning MPC with terminal constraints...")
-# x0 = np.array([0.45, 0.1, 0.09, 0.1])  # initial state
-
-# x_bar, u_bar = solve_condensed_mpc(
-#     x0=x0, A=Ad, B=Bd, Q=Q, R=R, P=P, N=N,
-#     u_lb=u_lb, u_ub=u_ub,
-#     D=D, c_lb=c_lb, c_ub=c_ub,
-#     with_terminal_constraint=True, terminal_set=terminal_set
-# )
-
-# time = np.arange(N + 1) * Ts
-
-# plt.figure(figsize=(10, 8))
-# plt.subplot(3,1,1)
-# plt.plot(time, x_bar[:, 0], 'b-', label='e1 (lateral error)')
-# plt.plot(time, x_bar[:, 2], 'r-', label='e2 (heading error)')
-# plt.grid(True)
-# plt.ylabel("Error [m, rad]")
-# plt.title("State Trajectories (Without Terminal Constraints)")
-# plt.legend()
-
-# plt.subplot(3,1,2)
-# plt.plot(time, x_bar[:, 1], 'b:', label='e1_dot')
-# plt.plot(time, x_bar[:, 3], 'r:', label='e2_dot')
-# plt.grid(True)
-# plt.ylabel("Error rates")
-# plt.legend()
-
-# plt.subplot(3,1,3)
-# plt.plot(time[:-1], u_bar[:, 0], 'k-', label='Steering angle δ')
-# plt.grid(True)
-# plt.ylabel("Steering [rad]")
-# plt.xlabel("Time [s]")
-# plt.legend()
-
-# plt.tight_layout()
-# plt.show()
-
-# # Phase portrait
-# plt.figure(figsize=(8, 6))
-
-# # Plot trajectory
-# plt.plot(x_bar[:, 0], x_bar[:, 2], 'b-', linewidth=1.5, label='MPC trajectory')
-# plt.scatter(x_bar[0, 0], x_bar[0, 2], c='g', s=100, label='Initial state')
-# plt.scatter(x_bar[-1, 0], x_bar[-1, 2], c='r', s=100, label='Final state')
-
-# # Plot state constraints
-# e1_min, e1_max = -0.5, 0.5
-# e2_min, e2_max = -0.1, 0.1
-# plt.plot([e1_min, e1_max, e1_max, e1_min, e1_min], 
-#          [e2_min, e2_min, e2_max, e2_max, e2_min], 
-#          'r--', label='State Constraints')
-
-# plt.grid(True)
-# plt.xlabel("e1 (lateral error) [m]")
-# plt.ylabel("e2 (heading error) [rad]")
-# plt.title("Phase Portrait: Lateral vs Heading Error")
-# plt.legend()
-# plt.axis('equal')
-# plt.show()
-
-# V_list = []  # to store cost at each step
-# x_list = [x0]  # to store states
-# u_list = []  # to store inputs
-
-# x_curr = x0.copy()
-# sim_steps = 30
-# for k in range(sim_steps):
-#     x_bar, u_bar = solve_condensed_mpc(
-#         x0=x_curr, A=Ad, B=Bd, Q=Q, R=R, P=P, N=N,
-#         u_lb=u_lb, u_ub=u_ub,
-#         D=D, c_lb=c_lb, c_ub=c_ub,
-#         with_terminal_constraint=True,
-#         terminal_set=terminal_set  # pass polytope here
-#     )
-
-#     # Compute the optimal cost
-#     cost = 0
-#     for i in range(N):
-#         cost += x_bar[i].T @ Q @ x_bar[i] + u_bar[i].T @ R @ u_bar[i]
-#     cost += x_bar[N].T @ P @ x_bar[N]
-#     V_list.append(cost)
-
-#     # Apply the first control input
-#     u_curr = u_bar[0]
-#     x_next = Ad @ x_curr + Bd @ u_curr
-#     x_list.append(x_next)
-#     u_list.append(u_curr)
-#     x_curr = x_next
-
-# # Convert lists to arrays for proper indexing
-# x_list = np.array(x_list)
-# u_list = np.array(u_list)
-
-# # Create time array for plotting
-# sim_time = np.arange(sim_steps + 1) * Ts
-
-# plt.figure(figsize=(10, 8))
-# plt.subplot(3,1,1)
-# plt.plot(sim_time, x_list[:, 0], 'b-', label='e1 (lateral error)')
-# plt.plot(sim_time, x_list[:, 2], 'r-', label='e2 (heading error)')
-# plt.grid(True)
-# plt.ylabel("Error [m, rad]")
-# plt.title("State Trajectories (With Terminal Constraints)")
-# plt.legend()
-
-# plt.subplot(3,1,2)
-# plt.plot(sim_time, x_list[:, 1], 'b:', label='e1_dot')
-# plt.plot(sim_time, x_list[:, 3], 'r:', label='e2_dot')
-# plt.grid(True)
-# plt.ylabel("Error rates")
-# plt.legend()
-
-# plt.subplot(3,1,3)
-# plt.plot(sim_time[:-1], u_list[:, 0], 'k-', label='Steering angle δ')
-# plt.grid(True)
-# plt.ylabel("Steering [rad]")
-# plt.xlabel("Time [s]")
-# plt.legend()
-
-# plt.tight_layout()
-# plt.show()
-
-# # Phase portrait
-# plt.figure(figsize=(8, 6))
-
-# # Plot trajectory
-# plt.plot(x_list[:, 0], x_list[:, 2], 'b-', linewidth=1.5, label='MPC trajectory')
-# plt.scatter(x_list[0, 0], x_list[0, 2], c='g', s=100, label='Initial state')
-# plt.scatter(x_list[-1, 0], x_list[-1, 2], c='r', s=100, label='Final state')
- 
-# # Try to plot the terminal set boundaries if available
-# try:
-#     # Get the ellipsoidal approximation
-#     from matplotlib.patches import Ellipse
-    
-#     P_sub = P[np.ix_([0, 2], [0, 2])]
-#     eigvals, eigvecs = np.linalg.eigh(P_sub)
-#     width, height = 2 * np.sqrt(c_terminal / eigvals)
-#     angle = np.degrees(np.arctan2(eigvecs[1, 0], eigvecs[0, 0]))
-    
-#     ellipse = Ellipse((0, 0), width, height,angle= angle, 
-#                      edgecolor='g', facecolor='none', 
-#                      linestyle='-', label='Terminal Set')
-#     plt.gca().add_patch(ellipse)
-# except Exception as e:
-#     print(f"Could not plot terminal set: {e}")
-
-# plt.grid(True)
-# plt.xlabel("e1 (lateral error) [m]")
-# plt.ylabel("e2 (heading error) [rad]")
-# plt.title("Phase Portrait: Lateral vs Heading Error")
-# plt.legend()
-# plt.axis('equal')
-# plt.show()
-
-# # lyapunov decrease
-# plt.figure()
-# plt.plot(np.arange(len(V_list)), V_list, marker='o')
-# plt.grid(True)
-# plt.title("Optimal Cost Function Over Time")
-# plt.xlabel("Time step")
-# plt.ylabel("V*(x)")
-# plt.show()
-
-
-
-
+plt.xlabel('e1 (lateral error) [m]')
+plt.ylabel('e2 (heading error) [rad]')
+plt.title('Comparison of Admissible Sets for MPC')
+plt.grid(True)
+plt.axis('equal')
+plt.legend()
+plt.show()

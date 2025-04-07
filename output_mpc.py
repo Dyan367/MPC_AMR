@@ -12,7 +12,7 @@ Caf = 80000
 Car = 80000
 Vx = 15.0  # set number
 
-# state space vector is [e1,e2,e1dot,e2dot] where e1 is the lateral error and e2 is the heading error
+# state space vector is [e1,e1dot,e2,e2dot] where e1 is the lateral error and e2 is the heading error
 dim_x = 4
 dim_u = 2 
 A = np.zeros((4, 4))
@@ -74,7 +74,7 @@ print("Closed-loop eigenvalues:", np.linalg.eigvals(A_cl))
 ## Augment the state space to add disturbance #################################################################################################################
 n = Ad.shape[0]   # 4 states
 m = Bd.shape[1]   # 1 (input)
-nd = 1            # 1 scalar disturbance on lateral error
+nd = 1            # disturbance dimension
 
 # from lecture 5 augmented state space
 A_aug = np.block([
@@ -87,18 +87,17 @@ B_aug = np.vstack([
     np.zeros((nd, m)) # 0
 ])
 
-p = 2  # number of outputs
+p = 4  # number of outputs
 n = Ad.shape[0]  # number of states = 4
 
-C = np.zeros((p, n))
-C[0, 0] = 1.0  # e1
-C[1, 1] = 1.0  # e2
+C = np.eye(4)
 
-Cd_aug = np.zeros((p, 1))  # Must match C's rows
-Cd_aug[0, 0] = 1.0         # Disturbance only affects e1
+Cdisturbance= np.zeros((p, nd))  
+Cdisturbance[0, 0] = 1.0         
+C_aug = np.hstack([C, Cdisturbance])
 
-C_aug = np.hstack([C, Cd_aug])
-
+print("C matrix:\n", C)
+print("Cd_aug matrix:\n", Cdisturbance)
 ## Check for controlability and observability of the augmented system ############################################################################################################
 # Define functions to check controllability and observability
 def check_controllability(A, B):
@@ -135,50 +134,71 @@ print(f"Augmented system controllability: Rank {rank_aug_ctrl}/{n_aug} - {'Contr
 # augmented system is not controllable because the disturbance is not controllable
 
 # we can prove observability by using lemma
-upper_block = np.hstack([np.eye(n) - A, -np.zeros((n, nd))])
-lower_block = np.hstack([C, Cd_aug])
+upper_block = np.hstack([np.eye(n) - Ad, -np.zeros((n, nd))])
+lower_block = np.hstack([C, Cdisturbance])
 stacked_matrix = np.vstack([upper_block, lower_block])
 rank = np.linalg.matrix_rank(stacked_matrix, tol=1e-10)
 full_rank = rank == n + nd
 print(f"Augmented system observability: Rank {'Observable' if full_rank else 'NOT Observable'}")
 
 ## Design the luenberger observer ######################################################################################################################################## Observer dynamics matrix
-desired_poles = [0.35, -0.35, 0.3,0.4 , 0.5] 
+# desired_poles = [0.1, 0.2, 0.3, 0.4, 0.5]
 
-# Compute observer gain L
-L = place_poles(A_aug.T, C_aug.T, desired_poles).gain_matrix.T
+# # Compute observer gain L
+# L = place_poles(A_aug.T, C_aug.T, desired_poles,method="YT").gain_matrix.T
 
-A_obs = A_aug - L @ C_aug
+# A_obs = A_aug - L @ C_aug
 
-# Compute eigenvalues
-eigvals = np.linalg.eigvals(A_obs)
+# # Compute eigenvalues
+# eigvals = np.linalg.eigvals(A_obs)
 
-print("Observer eigenvalues:", eigvals)
+# print("Observer eigenvalues:", eigvals)
 
-# Check if all inside unit circle
-stable = np.all(np.abs(eigvals) < 1)
-print("Observer is stable:", stable)
+# # Check if all inside unit circle
+# stable = np.all(np.abs(eigvals) < 1)
+# print("Observer is stable:", stable)
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-def plot_observer_poles(eigvals, desired_poles=None):
-    fig, ax = plt.subplots()
-    unit_circle = plt.Circle((0, 0), 1, color='black', fill=False, linestyle='--', label='Unit Circle')
-    ax.add_artist(unit_circle)
+# def plot_observer_poles(eigvals, desired_poles=None):
+#     fig, ax = plt.subplots()
+#     unit_circle = plt.Circle((0, 0), 1, color='black', fill=False, linestyle='--', label='Unit Circle')
+#     ax.add_artist(unit_circle)
 
-    ax.plot(np.real(eigvals), np.imag(eigvals), 'rx', label='Actual Observer Poles')
-    if desired_poles is not None:
-        ax.plot(np.real(desired_poles), np.imag(desired_poles), 'go', label='Desired Poles')
+#     ax.plot(np.real(eigvals), np.imag(eigvals), 'rx', label='Actual Observer Poles')
+#     if desired_poles is not None:
+#         ax.plot(np.real(desired_poles), np.imag(desired_poles), 'go', label='Desired Poles')
 
-    ax.set_title('Observer Pole Locations')
-    ax.set_xlabel('Real')
-    ax.set_ylabel('Imaginary')
-    ax.grid(True)
-    ax.set_aspect('equal', adjustable='datalim')
-    ax.legend()
-    plt.show()
+#     ax.set_title('Observer Pole Locations')
+#     ax.set_xlabel('Real')
+#     ax.set_ylabel('Imaginary')
+#     ax.grid(True)
+#     ax.set_aspect('equal', adjustable='datalim')
+#     ax.legend()
+#     plt.show()
 
-# Example usage
-eigvals = np.linalg.eigvals(A_aug - L @ C_aug)
-plot_observer_poles(eigvals, desired_poles)
+# # Example usage
+# eigvals = np.linalg.eigvals(A_aug - L @ C_aug)
+# plot_observer_poles(eigvals, desired_poles)
 
+def check_aug_obs_lemma(A, Bd, C, Cd):
+    n = A.shape[0]
+    nd = Bd.shape[1]
+    upper_block = np.hstack([np.eye(n) - A, -Bd])
+    lower_block = np.hstack([C, Cd])
+    stacked_matrix = np.vstack([upper_block, lower_block])
+    rank = np.linalg.matrix_rank(stacked_matrix,tol=1e-10)
+    return rank, rank == n + nd
+
+
+upper_block = np.hstack([np.eye(n) - Ad, -np.zeros((n, nd))])
+lower_block = np.hstack([C, Cdisturbance])
+stacked_matrix = np.vstack([upper_block, lower_block])
+rank = np.linalg.matrix_rank(stacked_matrix, tol=1e-10)
+full_rank = rank == n + nd
+print("Rank of the stacked matrix:", rank)
+print("Full rank condition met:", full_rank)
+print(f"Augmented system observability: Rank {'Observable' if full_rank else 'NOT Observable'}")
+
+rank, ok = check_aug_obs_lemma(Ad, np.zeros((n, nd)), C, Cdisturbance)
+print(f"Observability rank: {rank} → {'OK' if ok else 'NOT OBSERVABLE'}")
