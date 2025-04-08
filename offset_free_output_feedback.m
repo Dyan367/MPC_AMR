@@ -57,7 +57,7 @@ weight.R=1;
 weight.P =P;
 K = -K;
 
-T_sim=200;
+T_sim=30;
 
 %% === Extended System ===
 LTIe.A=[LTI.A LTI.Bd; zeros(dim.nd,dim.nx) eye(dim.nd)];
@@ -240,7 +240,7 @@ for k = 1:T_sim
 
     % Final combined constraint
     % Constraint = [X_constraint; U_constraint; terminal_constraint];
-    Constraint = [X_constraint; U_constraint];
+    Constraint = [X_constraint; U_constraint; terminal_constraint];
     u_max = deg2rad(70);  % realistic steering bounds
     Fu = [eye(dim.nu); -eye(dim.nu)];
     bu = [u_max; u_max];
