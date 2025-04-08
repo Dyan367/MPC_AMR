@@ -5,8 +5,8 @@ h=zeros(dim.nx+dim.nu,1);
 
 
 options1 = optimoptions(@quadprog); 
-options1.OptimalityTolerance=1e-20;
-options1.ConstraintTolerance=1.0000e-15;
+options1.OptimalityTolerance=1e-6;
+options1.ConstraintTolerance=1.0000e-6;
 options1.Display='off';
 [xur,~,exitflag]=quadprog(H,h,[],[],eqconstraints.A,eqconstraints.b,[],[],[],options1);
 if exitflag ~= 1
