@@ -23,7 +23,7 @@ sysd = c2d(sys, Ts);
 [A, B, C, D] = ssdata(sysd);
 
 x0 = [0.8; 0.0; 0.0; 0.0];
-d = 0.1;
+d = 0.5;
 yref = 0; 
 
 %% === Disturbance Model ===
@@ -167,7 +167,7 @@ xehat=zeros(dime.nx,T_sim+1);
 
 xe(:,1)=LTIe.x0;
 xehat(:,1) = zeros(dime.nx,1);
-xehat(:,1) = [x0; 0.1]; 
+xehat(:,1) = [x0; 0.5]; 
 fprintf("Size of LTIe.C: %dx%d\n", size(LTIe.C));
 fprintf("Size of LTIe.x0: %dx%d\n", size(LTIe.x0));
 
@@ -236,11 +236,16 @@ for k = 1:T_sim
     S_N = predmodinv.S(row_start:row_end, :);
     T_N = predmodinv.T(row_start:row_end, :);
     
-    terminal_constraint = Xf_shifted.A * (S_N * uostar + T_N * xe_0hat(1:dim.nx)) <= Xf_shifted.b;
+    terminal_constraint = Xf_shifted.A * ((S_N * uostar + T_N * xe_0hat(1:dim.nx)) - xr) <= Xf_shifted.b;
 
     % Final combined constraint
     % Constraint = [X_constraint; U_constraint; terminal_constraint];
-    Constraint = [X_constraint; U_constraint; terminal_constraint];
+    if k > 5
+        Constraint = [X_constraint; U_constraint; terminal_constraint];
+    else
+        Constraint = [X_constraint; U_constraint];
+    end
+
     u_max = deg2rad(70);  % realistic steering bounds
     Fu = [eye(dim.nu); -eye(dim.nu)];
     bu = [u_max; u_max];
