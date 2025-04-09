@@ -35,7 +35,7 @@ C = eye(4);
 D = zeros(4,1);
 vehicle_ss = ss(A,B,C,D);
 %% Discretize
-Ts = 0.01;
+Ts = 0.1;
 vehicle_ss_d = c2d(vehicle_ss, Ts);
 [A_d, B_d, C_d, ~] = ssdata(vehicle_ss_d);
 
@@ -47,7 +47,7 @@ T_sim = 10/Ts;
 LTI.A = A_d;
 LTI.B = B_d;
 %% Initial Conditions
-x0 = [0.5; 0; 0.1; 0];
+x0 = [-1; 0; 0.1; 0];
 LTI.x0 = x0;
 
 %% LQR
@@ -64,14 +64,15 @@ weight.P=P;
 mpt_init;
 Acl = A_d + B_d*K;
 
-x_bnd = [1.5; 3; 0.5; 2.5];
+x_bnd = [10; 10; 2; 6];
+x_bnd = [2; 3.5; 1; 3];
 x_lb = -x_bnd;
 x_ub = x_bnd;
 
 Fx = [eye(4); -eye(4)];
 bx = [x_bnd; x_bnd];
 
-u_bnd = deg2rad(30);
+u_bnd = deg2rad(50);
 u_lb = -u_bnd;
 u_ub = u_bnd;
 
@@ -89,20 +90,21 @@ for i = 1:100
         break;
     end
     Xf = newXf;
+    
 end
 
-fprintf("Computed Xf")
+fprintf("Computed Xf \n")
 %% Plotting the invariant set Xf
-% figure;
-% plot(Xf.projection([1,3]), 'color', 'b');
-% xlabel('Lateral error e_1');
-% ylabel('Heading error e_2');
-% title('Projection of LQR Invariant Set (e_1 vs e_2)');
-% grid on;
-% fprintf("Plotted Xf")
+figure;
+plot(Xf.projection([1,3]), 'color', 'b');
+xlabel('Lateral error e_1');
+ylabel('Heading error e_2');
+title('Projection of LQR Invariant Set (e_1 vs e_2)');
+grid on;
+fprintf("Plotted Xf")
 %% Prediction Matrices and costs
 
-predmod = predmodgen(LTI,dim)
+predmod = predmodgen(LTI,dim);
 Qbar = blkdiag(kron(eye(dim.N), Q), P);
 H = predmod.S' * Qbar * predmod.S + kron(eye(dim.N), R);
 h = predmod.S' * Qbar * predmod.T;
@@ -112,14 +114,14 @@ yref_traj = zeros(4, T_sim);
 for k = 1:T_sim
     t = k*Ts;
     if t < 2
-        yref_traj(1,k) = 0;
+        yref_traj(1,k) = -1;
     elseif t < 6
-        yref_traj(1,k) = 1.0; 
+        yref_traj(1,k) = 2.0; 
     elseif t < 10
-        yref_traj(1,k) = 0; 
+        yref_traj(1,k) = -1; 
     end
 end
-fprintf("Created Reference Trajectory")
+fprintf("Created Reference Trajectory \n")
 %% Simulation
 x = zeros(dim.nx, T_sim+1); u_rec = zeros(dim.nu, T_sim);
 x(:,1) = x0;
@@ -220,7 +222,7 @@ end
 xlabel('Time (s)');
 
 
-%% car visualization
+%% car lane change visualization
 
 lane_width = 3.5;
 road_width = 2 * lane_width;
@@ -252,7 +254,7 @@ plot([0 max(X_pos)+5], [0 0], 'k--', 'LineWidth', 1.5);
 N_draw = 10;
 idx = round(linspace(1, length(X_pos), N_draw));
 alpha_vals = linspace(0.2, 1, N_draw); % transparency fade
-car_color = [1 0 0];  % red
+car_color = [1 0 0]; 
 
 for i = 1:N_draw
     xi = X_pos(idx(i));

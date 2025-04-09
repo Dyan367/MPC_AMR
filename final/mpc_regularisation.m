@@ -51,10 +51,6 @@ Q = diag([100 1 100 1]);
 R = 0.1;
 [P,K,~] = idare(A_d, B_d, Q, R);
 K = -K;
-
-%% Check if LQR gain can make system stable
-disp("Eigenvalues of closed-loop system:\n");
-disp(eig(A_d + B_d*K)); 
 %% Setup MPC params
 dim.nx = 4;    % state dim
 dim.nu = 1;    % input dim
@@ -73,6 +69,7 @@ weight.P=P;
 predmod = predmodgen(LTI,dim); % from exercises code
 
 %% Cost generation
+% from exercises code
 Qbar=blkdiag(kron(eye(dim.N),weight.Q),weight.P);
 Rbar=kron(eye(dim.N),weight.R);
 H=predmod.S'*Qbar*predmod.S+Rbar;   
@@ -127,10 +124,6 @@ grid on;
 x = zeros(dim.nx, T_sim+1);
 u_rec = zeros(dim.nu, T_sim);
 x(:,1) = LTI.x0;
-% Generate N-step controllable sets (X_0, ..., X_N)
-%[xn_sets, ~] = Xn_gen(A_d, B_d, K, dim.N, x_lb, x_ub, u_lb, u_ub, 'lqr');
-
-
 %% Sim loop
 x_bnd  = [0.5; 2; 0.3; 1.5];  % e1, e1_dot, e2, e2_dot
 x_lb = -x_bnd;
@@ -248,7 +241,7 @@ for i = 1:4
     hold on;
     stairs(time, x_lqr(i,:),'LineWidth', 1.5,'Color',  'r', 'DisplayName', 'LQR');
 
-    % Add constraint lines
+    % constraints
     yline(x_bnd(i), 'k--', 'Max bound');
     yline(-x_bnd(i), 'k--', 'Min bound');
 
