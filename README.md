@@ -15,13 +15,13 @@ A reference tracking MPC was developed to demonstrate capabilities such as perfo
 
 ### Target State and Input Computation
 
-When given the output reference \( y_{\text{ref}} \), the optimal target state and input \( x_{\text{ref}}, u_{\text{ref}} \) are computed offline for every reference set point by solving:
+When given the output reference $(y_{\text{ref}}) $, the optimal target state and input $ (x_{\text{ref}}, u_{\text{ref}}) $ are computed offline for every reference set point by solving:
 
 $$
 (x_{\text{ref}}, u_{\text{ref}})(y_{\text{ref}}) \in \arg\min_{x_r, u_r} J(x_r, u_r)
 $$
 
-subject to:
+subject to
 
 $$
 \begin{bmatrix}
@@ -50,11 +50,13 @@ $$
 The MPC stage cost and terminal cost are reformulated to incorporate deviation from the reference state and input:
 
 **Stage cost**
+
 $$
 \ell(x, u) = (x - x_{\text{ref}})^{\top} Q (x - x_{\text{ref}}) + (u - u_{\text{ref}})^{\top} R (u - u_{\text{ref}})
 $$
 
 **Terminal cost**
+
 $$
 V_f(x(N)) = (x(N) - x_{\text{ref}})^{\top} P (x(N) - x_{\text{ref}})
 $$
@@ -69,5 +71,5 @@ $$
 ![Reference Tracking Response](figures/reference_tracking.png)  
 *Closed-loop response for reference tracking.*
 
-![Lane Change Visualization](figures/trajectory.png)  
+![Lane Change Visualization](figures/trajectory.eps.jpg)  
 *Visualization of a car lane change using MPC reference tracking.*
