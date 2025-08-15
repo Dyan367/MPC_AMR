@@ -39,6 +39,8 @@ y_{\text{ref}}
 \end{bmatrix}
 $$
 
+
+
 $$
 (x_r, u_r) \in Z, \quad Cx_r \in Y
 $$
