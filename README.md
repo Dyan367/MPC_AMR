@@ -10,13 +10,13 @@ A reference tracking MPC was developed to demonstrate capabilities such as perfo
 
 ### Target State and Input Computation
 
-When given the output reference \( y_{\text{ref}} \), the optimal target state and input \((x_{\text{ref}}, u_{\text{ref}})\) are computed offline for every reference set point by solving:
+When given the output reference $ y_{\text{ref}} $, the optimal target state and input $x_{\text{ref}}, u_{\text{ref}}$ are computed offline for every reference set point by solving:
 
-\[
+$$
 (x_{\text{ref}}, u_{\text{ref}})(y_{\text{ref}}) \in \arg\min_{x_r, u_r} J(x_r, u_r)
-\]
+$$
 subject to:
-\[
+$$
 \begin{bmatrix}
 I - A & -B \\
 C & 0
@@ -30,10 +30,10 @@ u_r
 0 \\
 y_{\text{ref}}
 \end{bmatrix}
-\]
-\[
+$$
+$$
 (x_r, u_r) \in Z, \quad Cx_r \in Y
-\]
+$$
 
 ---
 
@@ -42,13 +42,13 @@ y_{\text{ref}}
 The MPC stage cost and terminal cost are reformulated to incorporate deviation from the reference state and input:
 
 Stage cost:
-\[
+$$
 \ell(x, u) = (x - x_{\text{ref}})^{\top} Q (x - x_{\text{ref}}) + (u - u_{\text{ref}})^{\top} R (u - u_{\text{ref}})
-\]
+$$
 Terminal cost:
-\[
+$$
 V_f(x(N)) = (x(N) - x_{\text{ref}})^{\top} P (x(N) - x_{\text{ref}})
-\]
+$$
 
 ---
 
