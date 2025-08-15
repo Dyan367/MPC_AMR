@@ -1,6 +1,11 @@
 # MPC_AMR
 This repository contains code for the final project of Model Predictive Control SC42125 based on lane following for an autonomous vehicle. The MPC toolbox used is MPT3 and YALMIP.
 
+<!-- Enable MathJax on GitHub Pages -->
+<script type="text/javascript" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
 ## MPC Reference Tracking with State Feedback
 
 For autonomous cars, accurate trajectory generation and following are crucial, especially in high-risk scenarios at high speeds.  
@@ -10,12 +15,14 @@ A reference tracking MPC was developed to demonstrate capabilities such as perfo
 
 ### Target State and Input Computation
 
-When given the output reference $ y_{\text{ref}} $, the optimal target state and input $x_{\text{ref}}, u_{\text{ref}}$ are computed offline for every reference set point by solving:
+When given the output reference \( y_{\text{ref}} \), the optimal target state and input \( x_{\text{ref}}, u_{\text{ref}} \) are computed offline for every reference set point by solving:
 
 $$
 (x_{\text{ref}}, u_{\text{ref}})(y_{\text{ref}}) \in \arg\min_{x_r, u_r} J(x_r, u_r)
 $$
+
 subject to:
+
 $$
 \begin{bmatrix}
 I - A & -B \\
@@ -31,6 +38,7 @@ u_r
 y_{\text{ref}}
 \end{bmatrix}
 $$
+
 $$
 (x_r, u_r) \in Z, \quad Cx_r \in Y
 $$
@@ -41,11 +49,12 @@ $$
 
 The MPC stage cost and terminal cost are reformulated to incorporate deviation from the reference state and input:
 
-Stage cost:
+**Stage cost**
 $$
 \ell(x, u) = (x - x_{\text{ref}})^{\top} Q (x - x_{\text{ref}}) + (u - u_{\text{ref}})^{\top} R (u - u_{\text{ref}})
 $$
-Terminal cost:
+
+**Terminal cost**
 $$
 V_f(x(N)) = (x(N) - x_{\text{ref}})^{\top} P (x(N) - x_{\text{ref}})
 $$
@@ -57,10 +66,8 @@ $$
 - The MPC successfully tracks the reference without violating state and input constraints.
 - A simulation of a lane change scenario illustrates the real-world applicability and benefits of this MPC approach.
 
-![Reference Tracking Response](figures/reference_tracking.png))  
+![Reference Tracking Response](figures/reference_tracking.png)  
 *Closed-loop response for reference tracking.*
 
-![Lane Change Visualization](figures/trajectory.eps.jpg)  
+![Lane Change Visualization](figures/trajectory.png)  
 *Visualization of a car lane change using MPC reference tracking.*
-
-
