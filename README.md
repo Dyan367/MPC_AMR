@@ -1,11 +1,6 @@
 # MPC_AMR
 This repository contains code for the final project of Model Predictive Control SC42125 based on lane following for an autonomous vehicle. The MPC toolbox used is MPT3 and YALMIP.
 
-Enable MathJax on GitHub Pages
-<script type="text/javascript" async
-  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-</script>
-
 ## MPC Reference Tracking with State Feedback
 
 For autonomous cars, accurate trajectory generation and following are crucial, especially in high-risk scenarios at high speeds.  
@@ -23,7 +18,7 @@ $$
 
 subject to
 
-$$
+<!-- $$
 \begin{bmatrix}
 I - A & -B \\
 C & 0
@@ -37,8 +32,11 @@ u_r
 0 \\
 y_{\text{ref}}
 \end{bmatrix}
-$$
+$$ -->
 
+<p align="center">
+  <img src="figures/formulation.png" alt="formulation" width="180"/>
+</p>
 
 
 $$
